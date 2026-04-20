@@ -7,6 +7,9 @@ import SessionsView from '../views/SessionsView.vue'
 import PerformerHomeView from '../views/PerformerHomeView.vue'
 import AdvertiserHomeView from '../views/AdvertiserHomeView.vue'
 import FinanceView from '../views/FinanceView.vue'
+import AdvertiserTasksView from '../views/AdvertiserTasksView.vue'
+import AdminModerationView from '../views/AdminModerationView.vue'
+import PerformerTasksView from '../views/PerformerTasksView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -18,7 +21,10 @@ const router = createRouter({
     { path: '/sessions', component: SessionsView, meta: { auth: true } },
     { path: '/finance', component: FinanceView, meta: { auth: true } },
     { path: '/performer/home', component: PerformerHomeView, meta: { auth: true, role: 'performer' } },
+    { path: '/performer/tasks', component: PerformerTasksView, meta: { auth: true, role: 'performer' } },
     { path: '/advertiser/home', component: AdvertiserHomeView, meta: { auth: true, role: 'advertiser' } },
+    { path: '/advertiser/tasks', component: AdvertiserTasksView, meta: { auth: true, role: 'advertiser' } },
+    { path: '/admin/moderation', component: AdminModerationView, meta: { auth: true, role: 'admin' } },
   ],
 })
 

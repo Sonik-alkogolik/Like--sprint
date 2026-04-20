@@ -86,4 +86,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Withdrawal::class);
     }
+
+    public function advertiserTasks(): HasMany
+    {
+        return $this->hasMany(Task::class, 'advertiser_id');
+    }
 }

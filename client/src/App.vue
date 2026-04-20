@@ -19,7 +19,10 @@ async function doLogout() {
       <div class="brand">Like-sprint</div>
       <nav class="menu">
         <RouterLink v-if="auth.user?.role === 'performer'" to="/performer/home">Кабинет исполнителя</RouterLink>
+        <RouterLink v-if="auth.user?.role === 'performer'" to="/performer/tasks">Доступные задания</RouterLink>
         <RouterLink v-if="auth.user?.role === 'advertiser'" to="/advertiser/home">Кабинет рекламодателя</RouterLink>
+        <RouterLink v-if="auth.user?.role === 'advertiser'" to="/advertiser/tasks">Мои задания</RouterLink>
+        <RouterLink v-if="auth.user?.role === 'admin'" to="/admin/moderation">Модерация</RouterLink>
         <RouterLink to="/profile">Профиль</RouterLink>
         <RouterLink to="/finance">Финансы</RouterLink>
         <RouterLink to="/sessions">Сессии</RouterLink>

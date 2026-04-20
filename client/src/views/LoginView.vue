@@ -15,7 +15,11 @@ async function submit() {
   error.value = ''
   try {
     await auth.login(form)
-    const rolePath = auth.user?.role === 'advertiser' ? '/advertiser/home' : '/performer/home'
+    const rolePath = auth.user?.role === 'advertiser'
+      ? '/advertiser/home'
+      : auth.user?.role === 'admin'
+        ? '/admin/moderation'
+        : '/performer/home'
     router.push(rolePath)
   } catch (e) {
     error.value = e?.response?.data?.message || 'Ошибка входа'

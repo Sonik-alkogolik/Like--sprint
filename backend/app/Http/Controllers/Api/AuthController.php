@@ -27,7 +27,7 @@ class AuthController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:users,email'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
-            'role' => ['nullable', Rule::in(['performer', 'advertiser'])],
+            'role' => ['nullable', Rule::in(['performer', 'advertiser', 'admin'])],
         ]);
 
         if ($validator->fails()) {

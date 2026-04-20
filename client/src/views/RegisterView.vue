@@ -18,7 +18,11 @@ async function submit() {
   error.value = ''
   try {
     await auth.register(form)
-    const rolePath = auth.user?.role === 'advertiser' ? '/advertiser/home' : '/performer/home'
+    const rolePath = auth.user?.role === 'advertiser'
+      ? '/advertiser/home'
+      : auth.user?.role === 'admin'
+        ? '/admin/moderation'
+        : '/performer/home'
     router.push(rolePath)
   } catch (e) {
     const message = e?.response?.data?.message
@@ -38,6 +42,7 @@ async function submit() {
       <select v-model="form.role">
         <option value="performer">Исполнитель</option>
         <option value="advertiser">Рекламодатель</option>
+        <option value="admin">Администратор</option>
       </select>
     </label>
     <label>Пароль <input v-model="form.password" type="password" autocomplete="new-password" /></label>
