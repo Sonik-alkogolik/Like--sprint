@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Profile;
 use App\Models\User;
 use App\Models\UserSession;
+use App\Models\Wallet;
 use App\Services\DeviceLogService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,6 +44,11 @@ class AuthController extends Controller
         Profile::query()->create([
             'user_id' => $user->id,
             'display_name' => $user->name,
+        ]);
+        Wallet::query()->create([
+            'user_id' => $user->id,
+            'available_balance' => 0,
+            'hold_balance' => 0,
         ]);
 
         [$plainToken, $session] = $this->issueSession($request, $user);

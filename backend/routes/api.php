@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AdvertiserController;
+use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\PerformerController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SessionController;
@@ -29,6 +30,14 @@ Route::middleware('auth.token')->group(function () {
 
     Route::get('/sessions', [SessionController::class, 'index']);
     Route::post('/sessions/{session}/revoke', [SessionController::class, 'revoke']);
+
+    Route::prefix('finance')->group(function () {
+        Route::get('/wallet', [FinanceController::class, 'wallet']);
+        Route::get('/ledger', [FinanceController::class, 'ledger']);
+        Route::post('/deposits/simulate', [FinanceController::class, 'simulateDeposit']);
+        Route::get('/withdrawals', [FinanceController::class, 'withdrawals']);
+        Route::post('/withdrawals', [FinanceController::class, 'createWithdrawal']);
+    });
 
     Route::middleware('role:performer')->group(function () {
         Route::get('/performer/home', [PerformerController::class, 'home']);

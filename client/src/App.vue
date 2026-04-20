@@ -21,6 +21,7 @@ async function doLogout() {
         <RouterLink v-if="auth.user?.role === 'performer'" to="/performer/home">Кабинет исполнителя</RouterLink>
         <RouterLink v-if="auth.user?.role === 'advertiser'" to="/advertiser/home">Кабинет рекламодателя</RouterLink>
         <RouterLink to="/profile">Профиль</RouterLink>
+        <RouterLink to="/finance">Финансы</RouterLink>
         <RouterLink to="/sessions">Сессии</RouterLink>
       </nav>
       <div class="auth-zone">

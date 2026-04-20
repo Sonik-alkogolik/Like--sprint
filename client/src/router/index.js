@@ -6,6 +6,7 @@ import ProfileView from '../views/ProfileView.vue'
 import SessionsView from '../views/SessionsView.vue'
 import PerformerHomeView from '../views/PerformerHomeView.vue'
 import AdvertiserHomeView from '../views/AdvertiserHomeView.vue'
+import FinanceView from '../views/FinanceView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -15,6 +16,7 @@ const router = createRouter({
     { path: '/register', component: RegisterView, meta: { guest: true } },
     { path: '/profile', component: ProfileView, meta: { auth: true } },
     { path: '/sessions', component: SessionsView, meta: { auth: true } },
+    { path: '/finance', component: FinanceView, meta: { auth: true } },
     { path: '/performer/home', component: PerformerHomeView, meta: { auth: true, role: 'performer' } },
     { path: '/advertiser/home', component: AdvertiserHomeView, meta: { auth: true, role: 'advertiser' } },
   ],

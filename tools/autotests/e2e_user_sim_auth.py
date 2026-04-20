@@ -46,6 +46,10 @@ def run(base_url: str, delay_ms: int, headless: bool) -> None:
         page.get_by_label("Подтверждение пароля").fill(password)
         pause(delay_ms)
         page.get_by_role("button", name="Создать аккаунт").click()
+        page.wait_for_url(f"{base_url}/performer/home")
+        pause(delay_ms)
+
+        page.get_by_role("link", name="Профиль").click()
         page.wait_for_url(f"{base_url}/profile")
         pause(delay_ms)
 
@@ -79,6 +83,8 @@ def run(base_url: str, delay_ms: int, headless: bool) -> None:
         page.get_by_label("Пароль").fill(password)
         pause(delay_ms)
         page.get_by_role("button", name="Войти").click()
+        page.wait_for_url(f"{base_url}/performer/home")
+        page.get_by_role("link", name="Профиль").click()
         page.wait_for_url(f"{base_url}/profile")
         page.get_by_text("Роль:").wait_for(timeout=10000)
 
