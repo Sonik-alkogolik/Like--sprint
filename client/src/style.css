@@ -1,0 +1,134 @@
+:root {
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  color: #1b2c35;
+  background: #eef1de;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+}
+
+a {
+  color: #1b6e81;
+  text-decoration: none;
+}
+
+#app {
+  min-height: 100vh;
+}
+
+.app-shell {
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #ffffff;
+  border-bottom: 2px solid #d6dcc1;
+}
+
+.brand {
+  font-weight: 700;
+  color: #ad4816;
+}
+
+.menu {
+  display: flex;
+  gap: 12px;
+}
+
+.auth-zone {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.user {
+  color: #238c79;
+}
+
+.content {
+  max-width: 760px;
+  margin: 24px auto;
+  padding: 0 12px;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #d8e6ea;
+  border-left: 6px solid #2980b9;
+  padding: 16px;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid #c7d7dd;
+  border-radius: 8px;
+  padding: 10px;
+  font: inherit;
+}
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #16a085;
+  color: #fff;
+  cursor: pointer;
+}
+
+.btn.ghost {
+  background: #258aa4;
+}
+
+.btn.danger {
+  background: #d35400;
+}
+
+.error {
+  color: #ac3326;
+}
+
+.ok {
+  color: #028639;
+}
+
+.muted {
+  color: #53656d;
+}
+
+.session {
+  border: 1px solid #e4eef2;
+  border-radius: 8px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.session-main {
+  display: grid;
+  gap: 4px;
+}

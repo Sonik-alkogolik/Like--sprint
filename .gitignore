@@ -1,0 +1,22 @@
+# Local helper caches
+.composer/
+.tmp/
+
+# PHP / Laravel
+backend/vendor/
+backend/.env
+backend/bootstrap/cache/*.php
+backend/storage/*.key
+
+# Node / frontend
+client/node_modules/
+client/dist/
+client/.env
+
+# Python
+__pycache__/
+*.pyc
+
+# OS / editor
+.DS_Store
+Thumbs.db
