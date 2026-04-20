@@ -18,6 +18,8 @@ async function doLogout() {
     <header class="topbar">
       <div class="brand">Like-sprint</div>
       <nav class="menu">
+        <RouterLink v-if="auth.user?.role === 'performer'" to="/performer/home">Кабинет исполнителя</RouterLink>
+        <RouterLink v-if="auth.user?.role === 'advertiser'" to="/advertiser/home">Кабинет рекламодателя</RouterLink>
         <RouterLink to="/profile">Профиль</RouterLink>
         <RouterLink to="/sessions">Сессии</RouterLink>
       </nav>

@@ -15,7 +15,8 @@ async function submit() {
   error.value = ''
   try {
     await auth.login(form)
-    router.push('/profile')
+    const rolePath = auth.user?.role === 'advertiser' ? '/advertiser/home' : '/performer/home'
+    router.push(rolePath)
   } catch (e) {
     error.value = e?.response?.data?.message || 'Ошибка входа'
   }
@@ -31,4 +32,3 @@ async function submit() {
     <p v-if="error" class="error">{{ error }}</p>
   </section>
 </template>
-

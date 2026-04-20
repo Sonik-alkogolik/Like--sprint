@@ -4,6 +4,8 @@ import LoginView from '../views/LoginView.vue'
 import RegisterView from '../views/RegisterView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import SessionsView from '../views/SessionsView.vue'
+import PerformerHomeView from '../views/PerformerHomeView.vue'
+import AdvertiserHomeView from '../views/AdvertiserHomeView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -13,6 +15,8 @@ const router = createRouter({
     { path: '/register', component: RegisterView, meta: { guest: true } },
     { path: '/profile', component: ProfileView, meta: { auth: true } },
     { path: '/sessions', component: SessionsView, meta: { auth: true } },
+    { path: '/performer/home', component: PerformerHomeView, meta: { auth: true, role: 'performer' } },
+    { path: '/advertiser/home', component: AdvertiserHomeView, meta: { auth: true, role: 'advertiser' } },
   ],
 })
 
@@ -29,8 +33,8 @@ router.beforeEach(async (to) => {
 
   if (to.meta.auth && !auth.isAuthenticated) return '/login'
   if (to.meta.guest && auth.isAuthenticated) return '/profile'
+  if (to.meta.role && auth.user?.role !== to.meta.role) return '/profile'
   return true
 })
 
 export default router
-

@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\AdvertiserController;
+use App\Http\Controllers\Api\PerformerController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SessionController;
 use Illuminate\Support\Facades\Route;
@@ -27,4 +29,12 @@ Route::middleware('auth.token')->group(function () {
 
     Route::get('/sessions', [SessionController::class, 'index']);
     Route::post('/sessions/{session}/revoke', [SessionController::class, 'revoke']);
+
+    Route::middleware('role:performer')->group(function () {
+        Route::get('/performer/home', [PerformerController::class, 'home']);
+    });
+
+    Route::middleware('role:advertiser')->group(function () {
+        Route::get('/advertiser/home', [AdvertiserController::class, 'home']);
+    });
 });
