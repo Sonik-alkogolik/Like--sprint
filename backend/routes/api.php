@@ -2,10 +2,12 @@
 
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\AdvertiserController;
+use App\Http\Controllers\Api\AdvertiserSubmissionController;
 use App\Http\Controllers\Api\AdvertiserTaskController;
 use App\Http\Controllers\Api\AdminTaskModerationController;
 use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\PerformerController;
+use App\Http\Controllers\Api\PerformerSubmissionController;
 use App\Http\Controllers\Api\PerformerTaskController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\SessionController;
@@ -45,6 +47,12 @@ Route::middleware('auth.token')->group(function () {
     Route::middleware('role:performer')->group(function () {
         Route::get('/performer/home', [PerformerController::class, 'home']);
         Route::get('/performer/tasks/available', [PerformerTaskController::class, 'available']);
+        Route::post('/performer/tasks/{task}/take', [PerformerSubmissionController::class, 'takeTask']);
+        Route::get('/performer/assignments/{assignment}', [PerformerSubmissionController::class, 'show']);
+        Route::post('/performer/assignments/{assignment}/submit', [PerformerSubmissionController::class, 'submit']);
+        Route::post('/performer/assignments/{assignment}/cancel', [PerformerSubmissionController::class, 'cancel']);
+        Route::get('/performer/submissions/pending', [PerformerSubmissionController::class, 'pending']);
+        Route::post('/performer/submissions/{submission}/dispute', [PerformerSubmissionController::class, 'dispute']);
     });
 
     Route::middleware('role:advertiser')->group(function () {
@@ -55,6 +63,11 @@ Route::middleware('auth.token')->group(function () {
         Route::post('/advertiser/tasks/{task}/submit-moderation', [AdvertiserTaskController::class, 'submitModeration']);
         Route::post('/advertiser/tasks/{task}/launch', [AdvertiserTaskController::class, 'launch']);
         Route::post('/advertiser/tasks/{task}/pause', [AdvertiserTaskController::class, 'pause']);
+        Route::get('/advertiser/tasks/{task}/reports/pending', [AdvertiserSubmissionController::class, 'pendingByTask']);
+        Route::post('/advertiser/submissions/{submission}/approve', [AdvertiserSubmissionController::class, 'approve']);
+        Route::post('/advertiser/submissions/{submission}/reject', [AdvertiserSubmissionController::class, 'reject']);
+        Route::post('/advertiser/submissions/{submission}/rework', [AdvertiserSubmissionController::class, 'rework']);
+        Route::post('/advertiser/tasks/{task}/reports/mass-approve', [AdvertiserSubmissionController::class, 'massApprove']);
     });
 
     Route::middleware('role:admin')->group(function () {

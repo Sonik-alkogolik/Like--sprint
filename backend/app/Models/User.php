@@ -91,4 +91,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Task::class, 'advertiser_id');
     }
+
+    public function performerAssignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class, 'performer_id');
+    }
+
+    public function performerSubmissions(): HasMany
+    {
+        return $this->hasMany(Submission::class, 'performer_id');
+    }
 }

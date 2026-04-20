@@ -1,5 +1,6 @@
 <script setup>
 import { onMounted, reactive, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import api from '../api'
 
 const form = reactive({
@@ -107,6 +108,7 @@ onMounted(loadTasks)
         <span class="muted">status: {{ task.status }} | moderation: {{ task.moderation_status }}</span>
       </div>
       <div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end;">
+        <RouterLink class="btn ghost" :to="`/advertiser/tasks/${task.id}/reports`">Отчёты</RouterLink>
         <button class="btn ghost" @click="submitModeration(task.id)" :data-testid="`submit-moderation-${task.id}`" v-if="task.status === 'draft' || task.status === 'paused'">На модерацию</button>
         <button class="btn" @click="launchTask(task.id)" :data-testid="`launch-task-${task.id}`" v-if="task.status !== 'active'">Запустить</button>
         <button class="btn danger" @click="pauseTask(task.id)" :data-testid="`pause-task-${task.id}`" v-if="task.status === 'active'">Остановить</button>

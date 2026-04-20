@@ -58,4 +58,14 @@ class Task extends Model
     {
         return $this->hasMany(TaskLink::class);
     }
+
+    public function assignments(): HasMany
+    {
+        return $this->hasMany(Assignment::class);
+    }
+
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(Submission::class);
+    }
 }

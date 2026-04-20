@@ -168,6 +168,13 @@ class TaskService
         }
 
         return DB::transaction(function () use ($advertiser, $task) {
+            if ((float) $task->reserved_total > 0) {
+                $task->status = 'active';
+                $task->save();
+
+                return $task;
+            }
+
             $fund = (float) $task->price_per_action * (int) $task->max_approvals;
             $commission = (float) $task->commission_per_action * (int) $task->max_approvals;
             $total = $fund + $commission;

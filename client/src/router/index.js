@@ -10,6 +10,9 @@ import FinanceView from '../views/FinanceView.vue'
 import AdvertiserTasksView from '../views/AdvertiserTasksView.vue'
 import AdminModerationView from '../views/AdminModerationView.vue'
 import PerformerTasksView from '../views/PerformerTasksView.vue'
+import AssignmentWorkView from '../views/AssignmentWorkView.vue'
+import PendingSubmissionsView from '../views/PendingSubmissionsView.vue'
+import AdvertiserReportsView from '../views/AdvertiserReportsView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -22,8 +25,11 @@ const router = createRouter({
     { path: '/finance', component: FinanceView, meta: { auth: true } },
     { path: '/performer/home', component: PerformerHomeView, meta: { auth: true, role: 'performer' } },
     { path: '/performer/tasks', component: PerformerTasksView, meta: { auth: true, role: 'performer' } },
+    { path: '/performer/assignments/:id', component: AssignmentWorkView, meta: { auth: true, role: 'performer' } },
+    { path: '/performer/pending-submissions', component: PendingSubmissionsView, meta: { auth: true, role: 'performer' } },
     { path: '/advertiser/home', component: AdvertiserHomeView, meta: { auth: true, role: 'advertiser' } },
     { path: '/advertiser/tasks', component: AdvertiserTasksView, meta: { auth: true, role: 'advertiser' } },
+    { path: '/advertiser/tasks/:id/reports', component: AdvertiserReportsView, meta: { auth: true, role: 'advertiser' } },
     { path: '/admin/moderation', component: AdminModerationView, meta: { auth: true, role: 'admin' } },
   ],
 })
