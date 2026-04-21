@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import api from '../api'
 
 const tasks = ref([])
+const overview = ref(null)
 const comment = ref('approved by admin')
 const disputes = ref([])
 const disputeStatus = ref('open')
@@ -28,6 +29,11 @@ async function loadQueue() {
   } catch (e) {
     error.value = e?.response?.data?.message || 'Ошибка загрузки модерации'
   }
+}
+
+async function loadOverview() {
+  const { data } = await api.get('/admin/overview')
+  overview.value = data.overview || null
 }
 
 async function moderate(id, action) {
@@ -109,6 +115,7 @@ async function deactivateBlacklist(id) {
 }
 
 onMounted(async () => {
+  await loadOverview()
   await loadQueue()
   await loadDisputes()
   await loadUsers()
@@ -122,6 +129,21 @@ onMounted(async () => {
   <section class="card" data-testid="admin-moderation-page">
     <h2>Admin Control Center</h2>
     <p class="error" v-if="error">{{ error }}</p>
+
+    <div class="card" v-if="overview" data-testid="admin-overview">
+      <h3>Overview</h3>
+      <div class="admin-overview-grid">
+        <div class="session" data-testid="overview-users-total"><div class="session-main"><strong>Users total</strong><span class="muted">{{ overview.users_total }}</span></div></div>
+        <div class="session" data-testid="overview-users-blocked"><div class="session-main"><strong>Users blocked</strong><span class="muted">{{ overview.users_blocked }}</span></div></div>
+        <div class="session" data-testid="overview-tasks-active"><div class="session-main"><strong>Tasks active</strong><span class="muted">{{ overview.tasks_active }}</span></div></div>
+        <div class="session" data-testid="overview-tasks-pending"><div class="session-main"><strong>Tasks pending moderation</strong><span class="muted">{{ overview.tasks_pending_moderation }}</span></div></div>
+        <div class="session" data-testid="overview-disputes-open"><div class="session-main"><strong>Disputes open</strong><span class="muted">{{ overview.disputes_open }}</span></div></div>
+        <div class="session" data-testid="overview-fraud-high"><div class="session-main"><strong>Fraud high 24h</strong><span class="muted">{{ overview.fraud_events_high_24h }}</span></div></div>
+        <div class="session" data-testid="overview-audit-24h"><div class="session-main"><strong>Audit logs 24h</strong><span class="muted">{{ overview.audit_logs_24h }}</span></div></div>
+        <div class="session" data-testid="overview-blacklist-active"><div class="session-main"><strong>Blacklist active</strong><span class="muted">{{ overview.blacklist_active }}</span></div></div>
+        <div class="session" data-testid="overview-notify-pending"><div class="session-main"><strong>Notify queue pending</strong><span class="muted">{{ overview.notification_queue_pending }}</span></div></div>
+      </div>
+    </div>
 
     <div class="admin-grid">
       <div class="card">

@@ -83,6 +83,7 @@ Route::middleware('auth.token')->group(function () {
         Route::get('/admin/tasks/moderation-queue', [AdminTaskModerationController::class, 'queue']);
         Route::post('/admin/tasks/{task}/moderate', [AdminTaskModerationController::class, 'moderate']);
         Route::get('/admin/users', [AdminOpsController::class, 'users']);
+        Route::get('/admin/overview', [AdminOpsController::class, 'overview']);
         Route::post('/admin/users/{user}/block', [AdminOpsController::class, 'blockUser']);
         Route::post('/admin/users/{user}/unblock', [AdminOpsController::class, 'unblockUser']);
         Route::get('/admin/disputes', [AdminOpsController::class, 'disputes']);

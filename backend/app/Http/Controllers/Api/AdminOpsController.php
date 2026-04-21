@@ -7,6 +7,8 @@ use App\Models\AuditLog;
 use App\Models\BlacklistEntry;
 use App\Models\Dispute;
 use App\Models\FraudEvent;
+use App\Models\NotificationEvent;
+use App\Models\Task;
 use App\Models\User;
 use App\Services\AuditLogService;
 use App\Services\BlacklistService;
@@ -35,6 +37,29 @@ class AdminOpsController extends Controller
             ->get(['id', 'name', 'email', 'role', 'is_blocked', 'created_at']);
 
         return response()->json(['items' => $items]);
+    }
+
+    public function overview(): JsonResponse
+    {
+        $payload = [
+            'users_total' => User::query()->count(),
+            'users_blocked' => User::query()->where('is_blocked', true)->count(),
+            'tasks_total' => Task::query()->count(),
+            'tasks_active' => Task::query()->where('status', 'active')->count(),
+            'tasks_pending_moderation' => Task::query()->where('moderation_status', 'pending')->count(),
+            'disputes_open' => Dispute::query()->where('status', 'open')->count(),
+            'fraud_events_high_24h' => FraudEvent::query()
+                ->where('severity', 'high')
+                ->where('created_at', '>=', now()->subDay())
+                ->count(),
+            'audit_logs_24h' => AuditLog::query()
+                ->where('created_at', '>=', now()->subDay())
+                ->count(),
+            'blacklist_active' => BlacklistEntry::query()->where('is_active', true)->count(),
+            'notification_queue_pending' => NotificationEvent::query()->where('status', 'pending')->count(),
+        ];
+
+        return response()->json(['overview' => $payload]);
     }
 
     public function blockUser(Request $request, User $user): JsonResponse
