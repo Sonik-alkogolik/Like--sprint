@@ -46,6 +46,33 @@ class WalletService
         });
     }
 
+    public function debit(User $user, float $amount, string $entryType, array $meta = []): Wallet
+    {
+        return DB::transaction(function () use ($user, $amount, $entryType, $meta) {
+            $wallet = $this->ensureUserWallet($user);
+            /** @var Wallet $wallet */
+            $wallet = Wallet::query()->whereKey($wallet->id)->lockForUpdate()->firstOrFail();
+
+            if ((float) $wallet->available_balance < $amount) {
+                throw new RuntimeException('Insufficient available balance');
+            }
+
+            $wallet->available_balance = (float) $wallet->available_balance - $amount;
+            $wallet->save();
+
+            LedgerEntry::query()->create([
+                'wallet_id' => $wallet->id,
+                'user_id' => $user->id,
+                'entry_type' => $entryType,
+                'amount' => -$amount,
+                'balance_after' => $wallet->available_balance,
+                'meta' => $meta,
+            ]);
+
+            return $wallet;
+        });
+    }
+
     public function hold(User $user, float $amount, string $entryType, array $meta = []): Wallet
     {
         return DB::transaction(function () use ($user, $amount, $entryType, $meta) {

@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Task;
+use App\Models\User;
+use App\Services\AuditLogService;
 use App\Services\TaskService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -13,9 +15,10 @@ use RuntimeException;
 
 class AdminTaskModerationController extends Controller
 {
-    public function __construct(private readonly TaskService $tasks)
-    {
-    }
+    public function __construct(
+        private readonly TaskService $tasks,
+        private readonly AuditLogService $auditLogs,
+    ) {}
 
     public function queue(): JsonResponse
     {
@@ -29,6 +32,8 @@ class AdminTaskModerationController extends Controller
 
     public function moderate(Request $request, Task $task): JsonResponse
     {
+        /** @var User $admin */
+        $admin = $request->user();
         $validator = Validator::make($request->all(), [
             'action' => ['required', Rule::in(['approve', 'reject'])],
             'comment' => ['nullable', 'string', 'max:5000'],
@@ -47,6 +52,22 @@ class AdminTaskModerationController extends Controller
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
+
+        $this->auditLogs->log(
+            actor: $admin,
+            action: 'admin_task_moderated',
+            entityType: 'task',
+            entityId: $task->id,
+            oldValues: null,
+            newValues: [
+                'moderation_status' => $task->moderation_status,
+                'status' => $task->status,
+            ],
+            meta: [
+                'action' => (string) $request->input('action'),
+                'comment' => $request->input('comment') ? (string) $request->input('comment') : null,
+            ],
+        );
 
         return response()->json(['task' => $task]);
     }

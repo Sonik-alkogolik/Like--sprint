@@ -17,12 +17,18 @@ class Dispute extends Model
         'reason',
         'admin_comment',
         'resolved_at',
+        'compensation_applied',
+        'compensation_amount',
+        'compensation_applied_at',
     ];
 
     protected function casts(): array
     {
         return [
             'resolved_at' => 'datetime',
+            'compensation_applied' => 'boolean',
+            'compensation_amount' => 'decimal:4',
+            'compensation_applied_at' => 'datetime',
         ];
     }
 

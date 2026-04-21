@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Submission;
 use App\Models\Task;
 use App\Models\User;
+use App\Services\AuditLogService;
 use App\Services\AssignmentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -14,9 +15,10 @@ use RuntimeException;
 
 class AdvertiserSubmissionController extends Controller
 {
-    public function __construct(private readonly AssignmentService $assignments)
-    {
-    }
+    public function __construct(
+        private readonly AssignmentService $assignments,
+        private readonly AuditLogService $auditLogs,
+    ) {}
 
     public function pendingByTask(Request $request, Task $task): JsonResponse
     {
@@ -111,6 +113,19 @@ class AdvertiserSubmissionController extends Controller
         } catch (RuntimeException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
+
+        $this->auditLogs->log(
+            actor: $user,
+            action: 'advertiser_mass_approve',
+            entityType: 'task',
+            entityId: $task->id,
+            oldValues: null,
+            newValues: $result,
+            meta: [
+                'all' => $request->boolean('all'),
+                'submission_ids_count' => count((array) $request->input('submission_ids', [])),
+            ],
+        );
 
         return response()->json(['result' => $result]);
     }

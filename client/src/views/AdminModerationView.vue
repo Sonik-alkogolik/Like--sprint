@@ -7,10 +7,13 @@ const comment = ref('approved by admin')
 const disputes = ref([])
 const disputeStatus = ref('open')
 const disputeComment = ref('Решение администратора')
+const disputeCompensation = ref(true)
 const users = ref([])
 const blockReason = ref('Suspicious behavior')
 const fraudEvents = ref([])
 const fraudSeverity = ref('')
+const auditLogs = ref([])
+const auditAction = ref('')
 const error = ref('')
 
 async function loadQueue() {
@@ -40,9 +43,11 @@ async function setDisputeStatus(id, status) {
   await api.post(`/admin/disputes/${id}/status`, {
     status,
     admin_comment: disputeComment.value,
+    apply_compensation: disputeCompensation.value,
   })
   await loadDisputes()
   await loadFraudEvents()
+  await loadAuditLogs()
 }
 
 async function loadUsers() {
@@ -54,12 +59,14 @@ async function blockUser(id) {
   await api.post(`/admin/users/${id}/block`, { reason: blockReason.value })
   await loadUsers()
   await loadFraudEvents()
+  await loadAuditLogs()
 }
 
 async function unblockUser(id) {
   await api.post(`/admin/users/${id}/unblock`)
   await loadUsers()
   await loadFraudEvents()
+  await loadAuditLogs()
 }
 
 async function loadFraudEvents() {
@@ -68,11 +75,18 @@ async function loadFraudEvents() {
   fraudEvents.value = data.items || []
 }
 
+async function loadAuditLogs() {
+  const params = auditAction.value ? { action: auditAction.value } : {}
+  const { data } = await api.get('/admin/audit-logs', { params })
+  auditLogs.value = data.items || []
+}
+
 onMounted(async () => {
   await loadQueue()
   await loadDisputes()
   await loadUsers()
   await loadFraudEvents()
+  await loadAuditLogs()
 })
 </script>
 
@@ -110,11 +124,16 @@ onMounted(async () => {
           </select>
         </label>
         <label>Комментарий <input v-model="disputeComment" type="text" /></label>
+        <label style="flex-direction:row;align-items:center;gap:8px;">
+          <input type="checkbox" v-model="disputeCompensation" />
+          Применять финкоррекцию при решении в пользу исполнителя
+        </label>
         <div v-if="disputes.length === 0" class="muted">Споров в этой выборке нет</div>
         <div v-for="item in disputes" :key="item.id" class="session" :data-testid="`dispute-row-${item.id}`">
           <div class="session-main">
             <strong>Dispute #{{ item.id }} / submission #{{ item.submission_id }}</strong>
             <span class="muted">{{ item.reason }}</span>
+            <span class="muted" v-if="item.compensation_applied">Компенсация: ${{ Number(item.compensation_amount || 0).toFixed(4) }}</span>
           </div>
           <div style="display:flex;gap:6px;flex-wrap:wrap;">
             <button class="btn ghost" @click="setDisputeStatus(item.id, 'in_review')" :data-testid="`dispute-in-review-${item.id}`">В работу</button>
@@ -155,6 +174,22 @@ onMounted(async () => {
           <div class="session-main">
             <strong>{{ ev.event_type }} ({{ ev.severity }})</strong>
             <span class="muted">{{ ev.message || 'без сообщения' }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Audit Log</h3>
+        <label>
+          Action
+          <input v-model="auditAction" type="text" @change="loadAuditLogs" placeholder="admin_user_blocked" />
+        </label>
+        <div v-if="auditLogs.length === 0" class="muted">Логов пока нет</div>
+        <div v-for="log in auditLogs" :key="log.id" class="session" :data-testid="`audit-log-${log.id}`">
+          <div class="session-main">
+            <strong>{{ log.action }}</strong>
+            <span class="muted">{{ log.entity_type }} #{{ log.entity_id }}</span>
+            <span class="muted">actor #{{ log.actor_user_id || 'system' }}</span>
           </div>
         </div>
       </div>

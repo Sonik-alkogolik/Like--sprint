@@ -72,6 +72,19 @@ def create_dispute_by_api(page: Page, submission_id: int) -> None:
     if not response.ok:
         raise AssertionError(f"Dispute API failed: {response.status} {response.text()}")
 
+def fetch_wallet_available(page: Page) -> float:
+    token = page.evaluate("() => localStorage.getItem('auth_token')")
+    if not token:
+        raise AssertionError("No auth token in localStorage")
+    response = page.context.request.get(
+        "http://127.0.0.1:8000/api/finance/wallet",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    if not response.ok:
+        raise AssertionError(f"Wallet API failed: {response.status} {response.text()}")
+    payload = response.json()
+    return float(payload.get("wallet", {}).get("available_balance", 0))
+
 
 def run(base_url: str, delay_ms: int, headless: bool) -> None:
     unique = uuid.uuid4().hex[:7]
@@ -132,6 +145,7 @@ def run(base_url: str, delay_ms: int, headless: bool) -> None:
         logout(page, base_url)
 
         login(page, base_url, performer_email, password, "performer")
+        balance_before = fetch_wallet_available(page)
         create_dispute_by_api(page, submission_id)
         logout(page, base_url)
 
@@ -142,16 +156,27 @@ def run(base_url: str, delay_ms: int, headless: bool) -> None:
         page.locator(f"[data-testid='dispute-performer-{dispute_id}']").click()
         page.locator(f"[data-testid='dispute-row-{dispute_id}']").wait_for(state="hidden", timeout=10000)
 
+        page.locator("[data-testid^='audit-log-']").first.wait_for(timeout=10000)
+        page.locator("[data-testid^='fraud-event-']").first.wait_for(timeout=10000)
+        logout(page, base_url)
+
+        login(page, base_url, performer_email, password, "performer")
+        balance_after = fetch_wallet_available(page)
+        if balance_after <= balance_before:
+            raise AssertionError(
+                f"Compensation was not applied: before={balance_before}, after={balance_after}"
+            )
+        logout(page, base_url)
+
+        login(page, base_url, admin_email, password, "admin")
         performer_row = page.locator(".session", has_text=performer_email).first
         performer_row.wait_for(timeout=10000)
-        user_id_match = re.search(r"#(\d+)", performer_row.inner_text())
-        if not user_id_match:
-            raise AssertionError("Cannot parse user id")
-        performer_user_id = int(user_id_match.group(1))
-        page.locator(f"[data-testid='block-user-{performer_user_id}']").click()
-        page.locator(f"[data-testid='unblock-user-{performer_user_id}']").wait_for(timeout=10000)
+        performer_row.get_by_role("button", name="Блок").click()
+        performer_row.get_by_role("button", name="Разблок").wait_for(timeout=10000)
+        performer_row.get_by_role("button", name="Разблок").click()
+        performer_row.get_by_role("button", name="Блок").wait_for(timeout=10000)
+        performer_row.get_by_role("button", name="Блок").click()
 
-        page.locator("[data-testid^='fraud-event-']").first.wait_for(timeout=10000)
         logout(page, base_url)
 
         page.goto(f"{base_url}/login", wait_until="domcontentloaded")

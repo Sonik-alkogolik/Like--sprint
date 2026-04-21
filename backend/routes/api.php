@@ -88,6 +88,7 @@ Route::middleware('auth.token')->group(function () {
         Route::get('/admin/disputes', [AdminOpsController::class, 'disputes']);
         Route::post('/admin/disputes/{dispute}/status', [AdminOpsController::class, 'setDisputeStatus']);
         Route::get('/admin/fraud-events', [AdminOpsController::class, 'fraudEvents']);
+        Route::get('/admin/audit-logs', [AdminOpsController::class, 'auditLogs']);
         Route::post('/admin/notifications/dispatch', [NotificationController::class, 'dispatchQueue']);
         Route::get('/admin/notifications/stats', [NotificationController::class, 'queueStats']);
     });

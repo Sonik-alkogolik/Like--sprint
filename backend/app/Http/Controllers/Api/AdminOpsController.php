@@ -3,20 +3,26 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\AuditLog;
 use App\Models\Dispute;
 use App\Models\FraudEvent;
 use App\Models\User;
+use App\Services\AuditLogService;
+use App\Services\DisputeService;
 use App\Services\FraudEventService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
+use RuntimeException;
 
 class AdminOpsController extends Controller
 {
-    public function __construct(private readonly FraudEventService $fraudEvents)
-    {
-    }
+    public function __construct(
+        private readonly FraudEventService $fraudEvents,
+        private readonly AuditLogService $auditLogs,
+        private readonly DisputeService $disputes,
+    ) {}
 
     public function users(): JsonResponse
     {
@@ -30,6 +36,8 @@ class AdminOpsController extends Controller
 
     public function blockUser(Request $request, User $user): JsonResponse
     {
+        /** @var User $admin */
+        $admin = $request->user();
         $validator = Validator::make($request->all(), [
             'reason' => ['nullable', 'string', 'max:5000'],
         ]);
@@ -37,6 +45,7 @@ class AdminOpsController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $old = ['is_blocked' => (bool) $user->is_blocked];
         $user->is_blocked = true;
         $user->save();
 
@@ -47,12 +56,24 @@ class AdminOpsController extends Controller
             message: (string) ($request->input('reason') ?: 'Blocked by admin'),
             payload: ['email' => $user->email],
         );
+        $this->auditLogs->log(
+            actor: $admin,
+            action: 'admin_user_blocked',
+            entityType: 'user',
+            entityId: $user->id,
+            oldValues: $old,
+            newValues: ['is_blocked' => true],
+            meta: ['reason' => (string) ($request->input('reason') ?: '')],
+        );
 
         return response()->json(['user' => $user]);
     }
 
     public function unblockUser(Request $request, User $user): JsonResponse
     {
+        /** @var User $admin */
+        $admin = $request->user();
+        $old = ['is_blocked' => (bool) $user->is_blocked];
         $user->is_blocked = false;
         $user->save();
 
@@ -62,6 +83,14 @@ class AdminOpsController extends Controller
             severity: 'low',
             message: 'Unblocked by admin',
             payload: ['email' => $user->email],
+        );
+        $this->auditLogs->log(
+            actor: $admin,
+            action: 'admin_user_unblocked',
+            entityType: 'user',
+            entityId: $user->id,
+            oldValues: $old,
+            newValues: ['is_blocked' => false],
         );
 
         return response()->json(['user' => $user]);
@@ -93,35 +122,25 @@ class AdminOpsController extends Controller
         $validator = Validator::make($request->all(), [
             'status' => ['required', Rule::in(['in_review', 'resolved_for_performer', 'resolved_for_advertiser'])],
             'admin_comment' => ['nullable', 'string', 'max:5000'],
+            'apply_compensation' => ['sometimes', 'boolean'],
         ]);
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $newStatus = (string) $request->input('status');
-        $dispute->status = $newStatus;
-        $dispute->admin_comment = $request->input('admin_comment')
-            ? (string) $request->input('admin_comment')
-            : null;
-        $dispute->resolved_by_id = str_starts_with($newStatus, 'resolved_') ? $admin->id : null;
-        $dispute->resolved_at = str_starts_with($newStatus, 'resolved_') ? now() : null;
-        $dispute->save();
+        try {
+            $updated = $this->disputes->setStatus(
+                admin: $admin,
+                dispute: $dispute,
+                newStatus: (string) $request->input('status'),
+                adminComment: $request->input('admin_comment') ? (string) $request->input('admin_comment') : null,
+                applyCompensation: $request->boolean('apply_compensation', true),
+            );
+        } catch (RuntimeException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        }
 
-        $this->fraudEvents->log(
-            eventType: 'dispute_status_changed',
-            userId: $dispute->performer_id,
-            taskId: $dispute->task_id,
-            submissionId: $dispute->submission_id,
-            severity: $newStatus === 'resolved_for_performer' ? 'medium' : 'low',
-            message: "Dispute #{$dispute->id} set to {$newStatus}",
-            payload: [
-                'dispute_id' => $dispute->id,
-                'resolved_by_id' => $admin->id,
-                'admin_comment' => $dispute->admin_comment,
-            ],
-        );
-
-        return response()->json(['dispute' => $dispute->load(['task', 'submission', 'performer', 'advertiser'])]);
+        return response()->json(['dispute' => $updated]);
     }
 
     public function fraudEvents(Request $request): JsonResponse
@@ -133,6 +152,20 @@ class AdminOpsController extends Controller
             ->limit(200);
         if (in_array($severity, ['low', 'medium', 'high'], true)) {
             $query->where('severity', $severity);
+        }
+
+        return response()->json(['items' => $query->get()]);
+    }
+
+    public function auditLogs(Request $request): JsonResponse
+    {
+        $action = (string) $request->query('action', '');
+        $query = AuditLog::query()
+            ->with('actor')
+            ->orderByDesc('id')
+            ->limit(200);
+        if ($action !== '') {
+            $query->where('action', $action);
         }
 
         return response()->json(['items' => $query->get()]);
