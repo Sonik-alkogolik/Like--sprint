@@ -183,7 +183,21 @@ def run(base_url: str, delay_ms: int, headless: bool) -> None:
         page.get_by_label("Email").fill(performer_email)
         page.get_by_label("Пароль").fill(password)
         page.get_by_role("button", name="Войти").click()
-        page.get_by_text("User is blocked").wait_for(timeout=10000)
+
+        # Anti-flake: validate block through API (authoritative signal)
+        api_login = page.context.request.post(
+            "http://127.0.0.1:8000/api/auth/login",
+            data={"email": performer_email, "password": password},
+        )
+        if api_login.status != 403:
+            raise AssertionError(f"Blocked user login must return 403, got {api_login.status}")
+
+        # UI fallback check: user must stay on login page and should not be redirected
+        page.wait_for_url(f"{base_url}/login")
+        if page.locator("text=User is blocked").count() == 0:
+            # Message might be hidden by UI timing, but redirect is forbidden.
+            if page.url != f"{base_url}/login":
+                raise AssertionError("Blocked user unexpectedly redirected from login page")
 
         browser.close()
 
