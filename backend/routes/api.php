@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AdvertiserSubmissionController;
 use App\Http\Controllers\Api\AdvertiserTaskController;
 use App\Http\Controllers\Api\AdminTaskModerationController;
 use App\Http\Controllers\Api\FinanceController;
+use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PerformerController;
 use App\Http\Controllers\Api\PerformerSubmissionController;
 use App\Http\Controllers\Api\PerformerTaskController;
@@ -44,6 +45,13 @@ Route::middleware('auth.token')->group(function () {
         Route::post('/withdrawals', [FinanceController::class, 'createWithdrawal']);
     });
 
+    Route::prefix('notifications')->group(function () {
+        Route::get('/', [NotificationController::class, 'index']);
+        Route::get('/unread-count', [NotificationController::class, 'unreadCount']);
+        Route::post('/read-all', [NotificationController::class, 'markAllRead']);
+        Route::post('/{notification}/read', [NotificationController::class, 'markRead']);
+    });
+
     Route::middleware('role:performer')->group(function () {
         Route::get('/performer/home', [PerformerController::class, 'home']);
         Route::get('/performer/tasks/available', [PerformerTaskController::class, 'available']);
@@ -73,5 +81,7 @@ Route::middleware('auth.token')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/tasks/moderation-queue', [AdminTaskModerationController::class, 'queue']);
         Route::post('/admin/tasks/{task}/moderate', [AdminTaskModerationController::class, 'moderate']);
+        Route::post('/admin/notifications/dispatch', [NotificationController::class, 'dispatchQueue']);
+        Route::get('/admin/notifications/stats', [NotificationController::class, 'queueStats']);
     });
 });

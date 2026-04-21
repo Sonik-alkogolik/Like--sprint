@@ -1,16 +1,42 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import api from './api'
 import { useAuthStore } from './stores/auth'
 
 const auth = useAuthStore()
 const router = useRouter()
 const userName = computed(() => auth.user?.name || auth.user?.email || 'User')
+const unreadCount = computed(() => Number(auth.user?.notifications_unread_count || 0))
+
+async function loadUnreadCount() {
+  if (!auth.isAuthenticated) return
+  try {
+    const { data } = await api.get('/notifications/unread-count')
+    auth.user = {
+      ...(auth.user || {}),
+      notifications_unread_count: Number(data.count || 0),
+    }
+  } catch {
+    // ignore
+  }
+}
 
 async function doLogout() {
   await auth.logout()
   router.push('/login')
 }
+
+watch(
+  () => auth.isAuthenticated,
+  async (isAuth) => {
+    if (isAuth) await loadUnreadCount()
+  },
+)
+
+onMounted(async () => {
+  if (auth.isAuthenticated) await loadUnreadCount()
+})
 </script>
 
 <template>
@@ -26,6 +52,7 @@ async function doLogout() {
         <RouterLink v-if="auth.user?.role === 'admin'" to="/admin/moderation">Модерация</RouterLink>
         <RouterLink to="/profile">Профиль</RouterLink>
         <RouterLink to="/finance">Финансы</RouterLink>
+        <RouterLink to="/notifications">Уведомления ({{ unreadCount }})</RouterLink>
         <RouterLink to="/sessions">Сессии</RouterLink>
       </nav>
       <div class="auth-zone">

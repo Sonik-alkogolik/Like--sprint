@@ -11,9 +11,10 @@ use RuntimeException;
 
 class TaskService
 {
-    public function __construct(private readonly WalletService $wallets)
-    {
-    }
+    public function __construct(
+        private readonly WalletService $wallets,
+        private readonly NotificationService $notifications,
+    ) {}
 
     public function create(User $advertiser, array $data): Task
     {
@@ -153,6 +154,20 @@ class TaskService
                 'moderation_comment' => $comment,
             ])->save();
         }
+
+        $this->notifications->enqueue(
+            $task->advertiser()->firstOrFail(),
+            'task_moderated',
+            $action === 'approve' ? 'Задание прошло модерацию' : 'Задание отклонено на модерации',
+            $action === 'approve'
+                ? "Задание #{$task->id} \"{$task->title}\" одобрено модератором."
+                : "Задание #{$task->id} \"{$task->title}\" отклонено. Комментарий: " . ($comment ?: 'без комментария'),
+            [
+                'task_id' => $task->id,
+                'action' => $action,
+            ],
+            true,
+        );
 
         return $task;
     }

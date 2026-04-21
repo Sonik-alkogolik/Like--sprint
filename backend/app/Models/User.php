@@ -101,4 +101,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(Submission::class, 'performer_id');
     }
+
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(UserNotification::class);
+    }
 }

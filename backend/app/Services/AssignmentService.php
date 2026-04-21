@@ -14,9 +14,10 @@ use RuntimeException;
 
 class AssignmentService
 {
-    public function __construct(private readonly WalletService $wallets)
-    {
-    }
+    public function __construct(
+        private readonly WalletService $wallets,
+        private readonly NotificationService $notifications,
+    ) {}
 
     public function takeTask(User $performer, Task $task): Assignment
     {
@@ -101,6 +102,18 @@ class AssignmentService
 
             if ($task->verification_mode === 'auto_accept') {
                 $submission = $this->approve($task->advertiser, $submission);
+            } else {
+                $this->notifications->enqueue(
+                    $task->advertiser,
+                    'submission_submitted',
+                    'Новый отчёт на проверку',
+                    "По заданию #{$task->id} \"{$task->title}\" отправлен новый отчёт.",
+                    [
+                        'task_id' => $task->id,
+                        'submission_id' => $submission->id,
+                    ],
+                    true,
+                );
             }
 
             return $submission->load(['attachments', 'task']);
@@ -198,6 +211,19 @@ class AssignmentService
             $assignment->status = 'rework_requested';
             $assignment->save();
 
+            $this->notifications->enqueue(
+                $locked->performer,
+                'submission_rework_requested',
+                'Отчёт возвращён на доработку',
+                "По заданию #{$task->id} \"{$task->title}\" отчёт возвращён на доработку.",
+                [
+                    'task_id' => $task->id,
+                    'submission_id' => $locked->id,
+                    'comment' => $comment,
+                ],
+                true,
+            );
+
             return $locked->load(['assignment', 'task']);
         });
     }
@@ -254,6 +280,19 @@ class AssignmentService
             $system->balance = (float) $system->balance + (float) $task->commission_per_action;
             $system->save();
 
+            $this->notifications->enqueue(
+                $performer,
+                'submission_approved',
+                'Отчёт подтверждён',
+                "Ваш отчёт по заданию #{$task->id} \"{$task->title}\" подтверждён.",
+                [
+                    'task_id' => $task->id,
+                    'submission_id' => $locked->id,
+                    'reward' => (float) $task->price_per_action,
+                ],
+                true,
+            );
+
             return $locked->load(['assignment', 'task']);
         });
     }
@@ -292,6 +331,18 @@ class AssignmentService
                 'task_id' => $task->id,
                 'submission_id' => $locked->id,
             ]);
+
+            $this->notifications->enqueue(
+                $assignment->performer,
+                'submission_rejected',
+                'Отчёт отклонён',
+                "Ваш отчёт по заданию #{$task->id} \"{$task->title}\" был отклонён.",
+                [
+                    'task_id' => $task->id,
+                    'submission_id' => $locked->id,
+                ],
+                true,
+            );
 
             return $locked->load(['assignment', 'task']);
         });
@@ -335,7 +386,7 @@ class AssignmentService
 
         $task = Task::query()->findOrFail($submission->task_id);
 
-        return Dispute::query()->create([
+        $dispute = Dispute::query()->create([
             'submission_id' => $submission->id,
             'task_id' => $task->id,
             'performer_id' => $performer->id,
@@ -343,6 +394,21 @@ class AssignmentService
             'status' => 'open',
             'reason' => $reason,
         ]);
+
+        $this->notifications->enqueue(
+            $task->advertiser,
+            'submission_dispute_created',
+            'Создан спор по отклонённому отчёту',
+            "По заданию #{$task->id} \"{$task->title}\" создан спор по отчёту #{$submission->id}.",
+            [
+                'task_id' => $task->id,
+                'submission_id' => $submission->id,
+                'dispute_id' => $dispute->id,
+            ],
+            true,
+        );
+
+        return $dispute;
     }
 
     private function assertRepeatRules(User $performer, Task $task): void

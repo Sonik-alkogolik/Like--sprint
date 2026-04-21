@@ -13,6 +13,7 @@ import PerformerTasksView from '../views/PerformerTasksView.vue'
 import AssignmentWorkView from '../views/AssignmentWorkView.vue'
 import PendingSubmissionsView from '../views/PendingSubmissionsView.vue'
 import AdvertiserReportsView from '../views/AdvertiserReportsView.vue'
+import NotificationsView from '../views/NotificationsView.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -22,6 +23,7 @@ const router = createRouter({
     { path: '/register', component: RegisterView, meta: { guest: true } },
     { path: '/profile', component: ProfileView, meta: { auth: true } },
     { path: '/sessions', component: SessionsView, meta: { auth: true } },
+    { path: '/notifications', component: NotificationsView, meta: { auth: true } },
     { path: '/finance', component: FinanceView, meta: { auth: true } },
     { path: '/performer/home', component: PerformerHomeView, meta: { auth: true, role: 'performer' } },
     { path: '/performer/tasks', component: PerformerTasksView, meta: { auth: true, role: 'performer' } },
