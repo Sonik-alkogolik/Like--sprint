@@ -4,10 +4,12 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\AuditLog;
+use App\Models\BlacklistEntry;
 use App\Models\Dispute;
 use App\Models\FraudEvent;
 use App\Models\User;
 use App\Services\AuditLogService;
+use App\Services\BlacklistService;
 use App\Services\DisputeService;
 use App\Services\FraudEventService;
 use Illuminate\Http\JsonResponse;
@@ -22,6 +24,7 @@ class AdminOpsController extends Controller
         private readonly FraudEventService $fraudEvents,
         private readonly AuditLogService $auditLogs,
         private readonly DisputeService $disputes,
+        private readonly BlacklistService $blacklist,
     ) {}
 
     public function users(): JsonResponse
@@ -169,5 +172,93 @@ class AdminOpsController extends Controller
         }
 
         return response()->json(['items' => $query->get()]);
+    }
+
+    public function blacklist(Request $request): JsonResponse
+    {
+        $activeOnly = $request->boolean('active', true);
+        $query = BlacklistEntry::query()
+            ->with(['createdBy', 'deactivatedBy'])
+            ->orderByDesc('id')
+            ->limit(200);
+        if ($activeOnly) {
+            $query->where('is_active', true);
+        }
+
+        return response()->json(['items' => $query->get()]);
+    }
+
+    public function addBlacklist(Request $request): JsonResponse
+    {
+        /** @var User $admin */
+        $admin = $request->user();
+
+        $validator = Validator::make($request->all(), [
+            'entry_type' => ['required', Rule::in(['email', 'ip'])],
+            'entry_value' => ['required', 'string', 'max:255'],
+            'note' => ['nullable', 'string', 'max:5000'],
+            'expires_at' => ['nullable', 'date'],
+        ]);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $entryType = (string) $request->input('entry_type');
+        $entryValue = $this->blacklist->normalize($entryType, (string) $request->input('entry_value'));
+
+        $entry = BlacklistEntry::query()->create([
+            'entry_type' => $entryType,
+            'entry_value' => $entryValue,
+            'note' => $request->input('note') ? (string) $request->input('note') : null,
+            'expires_at' => $request->input('expires_at') ? (string) $request->input('expires_at') : null,
+            'is_active' => true,
+            'created_by_id' => $admin->id,
+        ]);
+
+        $this->fraudEvents->log(
+            eventType: 'blacklist_entry_added',
+            severity: 'high',
+            message: "Blacklist entry added: {$entryType}",
+            payload: ['entry_id' => $entry->id, 'entry_value' => $entryValue],
+        );
+        $this->auditLogs->log(
+            actor: $admin,
+            action: 'admin_blacklist_entry_added',
+            entityType: 'blacklist_entry',
+            entityId: $entry->id,
+            oldValues: null,
+            newValues: $entry->toArray(),
+        );
+
+        return response()->json(['entry' => $entry], 201);
+    }
+
+    public function deactivateBlacklist(Request $request, BlacklistEntry $entry): JsonResponse
+    {
+        /** @var User $admin */
+        $admin = $request->user();
+
+        $old = $entry->toArray();
+        $entry->is_active = false;
+        $entry->deactivated_by_id = $admin->id;
+        $entry->deactivated_at = now();
+        $entry->save();
+
+        $this->fraudEvents->log(
+            eventType: 'blacklist_entry_deactivated',
+            severity: 'low',
+            message: "Blacklist entry deactivated: {$entry->entry_type}",
+            payload: ['entry_id' => $entry->id, 'entry_value' => $entry->entry_value],
+        );
+        $this->auditLogs->log(
+            actor: $admin,
+            action: 'admin_blacklist_entry_deactivated',
+            entityType: 'blacklist_entry',
+            entityId: $entry->id,
+            oldValues: $old,
+            newValues: $entry->toArray(),
+        );
+
+        return response()->json(['entry' => $entry]);
     }
 }

@@ -7,7 +7,9 @@ use App\Models\Profile;
 use App\Models\User;
 use App\Models\UserSession;
 use App\Models\Wallet;
+use App\Services\BlacklistService;
 use App\Services\DeviceLogService;
+use App\Services\FraudEventService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -17,9 +19,11 @@ use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
-    public function __construct(private readonly DeviceLogService $deviceLogs)
-    {
-    }
+    public function __construct(
+        private readonly DeviceLogService $deviceLogs,
+        private readonly BlacklistService $blacklist,
+        private readonly FraudEventService $fraudEvents,
+    ) {}
 
     public function register(Request $request): JsonResponse
     {
@@ -34,9 +38,27 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
+        $email = (string) $request->input('email');
+        $ip = (string) ($request->ip() ?? '');
+        $blockedByEmail = $this->blacklist->findActiveMatch('email', $email);
+        $blockedByIp = $ip !== '' ? $this->blacklist->findActiveMatch('ip', $ip) : null;
+        if ($blockedByEmail || $blockedByIp) {
+            $this->fraudEvents->log(
+                eventType: 'blacklist_registration_blocked',
+                severity: 'high',
+                message: 'Registration blocked by blacklist',
+                payload: [
+                    'email' => $email,
+                    'ip' => $ip,
+                    'entry_id' => $blockedByEmail?->id ?? $blockedByIp?->id,
+                ],
+            );
+            return response()->json(['message' => 'Registration is blocked by blacklist'], 403);
+        }
+
         $user = User::query()->create([
             'name' => (string) $request->input('name'),
-            'email' => (string) $request->input('email'),
+            'email' => $email,
             'password' => (string) $request->input('password'),
             'role' => (string) $request->input('role', 'performer'),
         ]);
@@ -71,7 +93,25 @@ class AuthController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $user = User::query()->where('email', (string) $request->input('email'))->first();
+        $email = (string) $request->input('email');
+        $ip = (string) ($request->ip() ?? '');
+        $blockedByEmail = $this->blacklist->findActiveMatch('email', $email);
+        $blockedByIp = $ip !== '' ? $this->blacklist->findActiveMatch('ip', $ip) : null;
+        if ($blockedByEmail || $blockedByIp) {
+            $this->fraudEvents->log(
+                eventType: 'blacklist_login_blocked',
+                severity: 'high',
+                message: 'Login blocked by blacklist',
+                payload: [
+                    'email' => $email,
+                    'ip' => $ip,
+                    'entry_id' => $blockedByEmail?->id ?? $blockedByIp?->id,
+                ],
+            );
+            return response()->json(['message' => 'Access denied by blacklist'], 403);
+        }
+
+        $user = User::query()->where('email', $email)->first();
         if (! $user || ! Hash::check((string) $request->input('password'), $user->password)) {
             return response()->json(['message' => 'Invalid credentials'], 401);
         }

@@ -89,6 +89,9 @@ Route::middleware('auth.token')->group(function () {
         Route::post('/admin/disputes/{dispute}/status', [AdminOpsController::class, 'setDisputeStatus']);
         Route::get('/admin/fraud-events', [AdminOpsController::class, 'fraudEvents']);
         Route::get('/admin/audit-logs', [AdminOpsController::class, 'auditLogs']);
+        Route::get('/admin/blacklist', [AdminOpsController::class, 'blacklist']);
+        Route::post('/admin/blacklist', [AdminOpsController::class, 'addBlacklist']);
+        Route::post('/admin/blacklist/{entry}/deactivate', [AdminOpsController::class, 'deactivateBlacklist']);
         Route::post('/admin/notifications/dispatch', [NotificationController::class, 'dispatchQueue']);
         Route::get('/admin/notifications/stats', [NotificationController::class, 'queueStats']);
     });

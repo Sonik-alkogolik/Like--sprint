@@ -14,6 +14,10 @@ const fraudEvents = ref([])
 const fraudSeverity = ref('')
 const auditLogs = ref([])
 const auditAction = ref('')
+const blacklistItems = ref([])
+const blacklistType = ref('email')
+const blacklistValue = ref('')
+const blacklistNote = ref('Manual admin block')
 const error = ref('')
 
 async function loadQueue() {
@@ -81,12 +85,36 @@ async function loadAuditLogs() {
   auditLogs.value = data.items || []
 }
 
+async function loadBlacklist() {
+  const { data } = await api.get('/admin/blacklist')
+  blacklistItems.value = data.items || []
+}
+
+async function addBlacklist() {
+  await api.post('/admin/blacklist', {
+    entry_type: blacklistType.value,
+    entry_value: blacklistValue.value,
+    note: blacklistNote.value,
+  })
+  blacklistValue.value = ''
+  await loadBlacklist()
+  await loadAuditLogs()
+  await loadFraudEvents()
+}
+
+async function deactivateBlacklist(id) {
+  await api.post(`/admin/blacklist/${id}/deactivate`)
+  await loadBlacklist()
+  await loadAuditLogs()
+}
+
 onMounted(async () => {
   await loadQueue()
   await loadDisputes()
   await loadUsers()
   await loadFraudEvents()
   await loadAuditLogs()
+  await loadBlacklist()
 })
 </script>
 
@@ -191,6 +219,35 @@ onMounted(async () => {
             <span class="muted">{{ log.entity_type }} #{{ log.entity_id }}</span>
             <span class="muted">actor #{{ log.actor_user_id || 'system' }}</span>
           </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Blacklist</h3>
+        <label>
+          Type
+          <select v-model="blacklistType" data-testid="blacklist-type">
+            <option value="email">email</option>
+            <option value="ip">ip</option>
+          </select>
+        </label>
+        <label>
+          Value
+          <input v-model="blacklistValue" type="text" data-testid="blacklist-value" placeholder="blocked@example.com" />
+        </label>
+        <label>
+          Note
+          <input v-model="blacklistNote" type="text" data-testid="blacklist-note" />
+        </label>
+        <button class="btn danger" @click="addBlacklist" data-testid="add-blacklist-btn">Добавить в blacklist</button>
+
+        <div v-if="blacklistItems.length === 0" class="muted">Blacklist пуст</div>
+        <div v-for="item in blacklistItems" :key="item.id" class="session" :data-testid="`blacklist-row-${item.id}`">
+          <div class="session-main">
+            <strong>{{ item.entry_type }}: {{ item.entry_value }}</strong>
+            <span class="muted">{{ item.note || 'без заметки' }}</span>
+          </div>
+          <button class="btn ghost" @click="deactivateBlacklist(item.id)" data-testid="deactivate-blacklist-btn">Деактивировать</button>
         </div>
       </div>
     </div>
