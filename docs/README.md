@@ -6,3 +6,6 @@ This folder stores supporting docs:
 - api.md
 - deployment.md
 - testing.md
+- nginx.like-sprint.conf
+- server-checklist.md
+- stage9-server-rollout.md
