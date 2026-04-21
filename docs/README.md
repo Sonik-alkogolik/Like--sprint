@@ -9,3 +9,4 @@ This folder stores supporting docs:
 - nginx.like-sprint.conf
 - server-checklist.md
 - stage9-server-rollout.md
+- stage10-operations.md
