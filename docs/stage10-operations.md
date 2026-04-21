@@ -11,10 +11,12 @@
 
 ## Post-deploy smoke
 - Запустить `scripts/deploy/post_deploy_smoke.ps1` локально против целевого URL.
+- Запустить API smoke: `python tools/autotests/post_deploy_api_smoke.py --base-url http://127.0.0.1:8000`.
 - Минимальные критерии:
   - `/api/health` = 200;
   - `/` = 200;
   - `/api/admin/notifications/stats` отвечает при admin токене.
+  - `register/login/auth/me/performer-home` успешно проходят в API smoke.
 
 ## Алерты (минимум)
 - `api.health` не отвечает > 1 мин.

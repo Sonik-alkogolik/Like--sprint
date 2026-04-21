@@ -10,3 +10,4 @@ This folder stores supporting docs:
 - server-checklist.md
 - stage9-server-rollout.md
 - stage10-operations.md
+- tools/autotests/post_deploy_api_smoke.py
