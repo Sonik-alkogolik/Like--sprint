@@ -42,7 +42,10 @@ onMounted(async () => {
 <template>
   <div class="app-shell">
     <header class="topbar">
-      <div class="brand">Like-sprint</div>
+      <div class="brand-wrap">
+        <div class="brand">Like-sprint</div>
+        <div class="brand-sub">Light Tech Workspace</div>
+      </div>
       <nav class="menu">
         <RouterLink v-if="auth.user?.role === 'performer'" to="/performer/home">Кабинет исполнителя</RouterLink>
         <RouterLink v-if="auth.user?.role === 'performer'" to="/performer/tasks">Доступные задания</RouterLink>

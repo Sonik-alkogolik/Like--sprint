@@ -17,6 +17,7 @@ class AssignmentService
     public function __construct(
         private readonly WalletService $wallets,
         private readonly NotificationService $notifications,
+        private readonly FraudEventService $fraudEvents,
     ) {}
 
     public function takeTask(User $performer, Task $task): Assignment
@@ -344,6 +345,16 @@ class AssignmentService
                 true,
             );
 
+            $this->fraudEvents->log(
+                eventType: 'submission_rejected',
+                userId: $assignment->performer_id,
+                taskId: $task->id,
+                submissionId: $locked->id,
+                severity: 'medium',
+                message: "Submission #{$locked->id} rejected by advertiser",
+                payload: ['advertiser_id' => $advertiser->id],
+            );
+
             return $locked->load(['assignment', 'task']);
         });
     }
@@ -406,6 +417,16 @@ class AssignmentService
                 'dispute_id' => $dispute->id,
             ],
             true,
+        );
+
+        $this->fraudEvents->log(
+            eventType: 'dispute_created',
+            userId: $performer->id,
+            taskId: $task->id,
+            submissionId: $submission->id,
+            severity: 'high',
+            message: "Dispute #{$dispute->id} created for rejected submission",
+            payload: ['advertiser_id' => $task->advertiser_id],
         );
 
         return $dispute;

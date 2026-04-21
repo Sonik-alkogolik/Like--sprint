@@ -12,8 +12,10 @@ class Dispute extends Model
         'task_id',
         'performer_id',
         'advertiser_id',
+        'resolved_by_id',
         'status',
         'reason',
+        'admin_comment',
         'resolved_at',
     ];
 
@@ -32,5 +34,20 @@ class Dispute extends Model
     public function task(): BelongsTo
     {
         return $this->belongsTo(Task::class);
+    }
+
+    public function performer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'performer_id');
+    }
+
+    public function advertiser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'advertiser_id');
+    }
+
+    public function resolvedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'resolved_by_id');
     }
 }

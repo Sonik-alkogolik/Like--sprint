@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AdvertiserController;
 use App\Http\Controllers\Api\AdvertiserSubmissionController;
 use App\Http\Controllers\Api\AdvertiserTaskController;
 use App\Http\Controllers\Api\AdminTaskModerationController;
+use App\Http\Controllers\Api\AdminOpsController;
 use App\Http\Controllers\Api\FinanceController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\PerformerController;
@@ -81,6 +82,12 @@ Route::middleware('auth.token')->group(function () {
     Route::middleware('role:admin')->group(function () {
         Route::get('/admin/tasks/moderation-queue', [AdminTaskModerationController::class, 'queue']);
         Route::post('/admin/tasks/{task}/moderate', [AdminTaskModerationController::class, 'moderate']);
+        Route::get('/admin/users', [AdminOpsController::class, 'users']);
+        Route::post('/admin/users/{user}/block', [AdminOpsController::class, 'blockUser']);
+        Route::post('/admin/users/{user}/unblock', [AdminOpsController::class, 'unblockUser']);
+        Route::get('/admin/disputes', [AdminOpsController::class, 'disputes']);
+        Route::post('/admin/disputes/{dispute}/status', [AdminOpsController::class, 'setDisputeStatus']);
+        Route::get('/admin/fraud-events', [AdminOpsController::class, 'fraudEvents']);
         Route::post('/admin/notifications/dispatch', [NotificationController::class, 'dispatchQueue']);
         Route::get('/admin/notifications/stats', [NotificationController::class, 'queueStats']);
     });

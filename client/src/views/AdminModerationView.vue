@@ -4,10 +4,23 @@ import api from '../api'
 
 const tasks = ref([])
 const comment = ref('approved by admin')
+const disputes = ref([])
+const disputeStatus = ref('open')
+const disputeComment = ref('Решение администратора')
+const users = ref([])
+const blockReason = ref('Suspicious behavior')
+const fraudEvents = ref([])
+const fraudSeverity = ref('')
+const error = ref('')
 
 async function loadQueue() {
-  const { data } = await api.get('/admin/tasks/moderation-queue')
-  tasks.value = data.tasks
+  error.value = ''
+  try {
+    const { data } = await api.get('/admin/tasks/moderation-queue')
+    tasks.value = data.tasks
+  } catch (e) {
+    error.value = e?.response?.data?.message || 'Ошибка загрузки модерации'
+  }
 }
 
 async function moderate(id, action) {
@@ -18,22 +31,132 @@ async function moderate(id, action) {
   await loadQueue()
 }
 
-onMounted(loadQueue)
+async function loadDisputes() {
+  const { data } = await api.get('/admin/disputes', { params: { status: disputeStatus.value } })
+  disputes.value = data.items || []
+}
+
+async function setDisputeStatus(id, status) {
+  await api.post(`/admin/disputes/${id}/status`, {
+    status,
+    admin_comment: disputeComment.value,
+  })
+  await loadDisputes()
+  await loadFraudEvents()
+}
+
+async function loadUsers() {
+  const { data } = await api.get('/admin/users')
+  users.value = data.items || []
+}
+
+async function blockUser(id) {
+  await api.post(`/admin/users/${id}/block`, { reason: blockReason.value })
+  await loadUsers()
+  await loadFraudEvents()
+}
+
+async function unblockUser(id) {
+  await api.post(`/admin/users/${id}/unblock`)
+  await loadUsers()
+  await loadFraudEvents()
+}
+
+async function loadFraudEvents() {
+  const params = fraudSeverity.value ? { severity: fraudSeverity.value } : {}
+  const { data } = await api.get('/admin/fraud-events', { params })
+  fraudEvents.value = data.items || []
+}
+
+onMounted(async () => {
+  await loadQueue()
+  await loadDisputes()
+  await loadUsers()
+  await loadFraudEvents()
+})
 </script>
 
 <template>
   <section class="card" data-testid="admin-moderation-page">
-    <h2>Модерация заданий</h2>
-    <label>Комментарий <input v-model="comment" type="text" /></label>
-    <div v-if="tasks.length === 0" class="muted">Очередь пустая</div>
-    <div v-for="task in tasks" :key="task.id" class="session" :data-testid="`moderation-row-${task.id}`">
-      <div class="session-main">
-        <strong>#{{ task.id }} {{ task.title }}</strong>
-        <span class="muted">{{ task.moderation_status }}</span>
+    <h2>Admin Control Center</h2>
+    <p class="error" v-if="error">{{ error }}</p>
+
+    <div class="admin-grid">
+      <div class="card">
+        <h3>Модерация заданий</h3>
+        <label>Комментарий <input v-model="comment" type="text" /></label>
+        <div v-if="tasks.length === 0" class="muted">Очередь пустая</div>
+        <div v-for="task in tasks" :key="task.id" class="session" :data-testid="`moderation-row-${task.id}`">
+          <div class="session-main">
+            <strong>#{{ task.id }} {{ task.title }}</strong>
+            <span class="muted">{{ task.moderation_status }}</span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn" @click="moderate(task.id, 'approve')" :data-testid="`approve-task-${task.id}`">Принять</button>
+            <button class="btn danger" @click="moderate(task.id, 'reject')" :data-testid="`reject-task-${task.id}`">Отклонить</button>
+          </div>
+        </div>
       </div>
-      <div style="display:flex;gap:6px;">
-        <button class="btn" @click="moderate(task.id, 'approve')" :data-testid="`approve-task-${task.id}`">Принять</button>
-        <button class="btn danger" @click="moderate(task.id, 'reject')" :data-testid="`reject-task-${task.id}`">Отклонить</button>
+
+      <div class="card">
+        <h3>Очередь споров</h3>
+        <label>
+          Статус
+          <select v-model="disputeStatus" @change="loadDisputes">
+            <option value="open">open</option>
+            <option value="in_review">in_review</option>
+            <option value="resolved_for_performer">resolved_for_performer</option>
+            <option value="resolved_for_advertiser">resolved_for_advertiser</option>
+          </select>
+        </label>
+        <label>Комментарий <input v-model="disputeComment" type="text" /></label>
+        <div v-if="disputes.length === 0" class="muted">Споров в этой выборке нет</div>
+        <div v-for="item in disputes" :key="item.id" class="session" :data-testid="`dispute-row-${item.id}`">
+          <div class="session-main">
+            <strong>Dispute #{{ item.id }} / submission #{{ item.submission_id }}</strong>
+            <span class="muted">{{ item.reason }}</span>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button class="btn ghost" @click="setDisputeStatus(item.id, 'in_review')" :data-testid="`dispute-in-review-${item.id}`">В работу</button>
+            <button class="btn" @click="setDisputeStatus(item.id, 'resolved_for_performer')" :data-testid="`dispute-performer-${item.id}`">В пользу исполнителя</button>
+            <button class="btn danger" @click="setDisputeStatus(item.id, 'resolved_for_advertiser')" :data-testid="`dispute-advertiser-${item.id}`">В пользу рекламодателя</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Пользователи</h3>
+        <label>Причина блокировки <input v-model="blockReason" type="text" /></label>
+        <div v-for="u in users" :key="u.id" class="session" :data-testid="`admin-user-${u.id}`">
+          <div class="session-main">
+            <strong>#{{ u.id }} {{ u.email }}</strong>
+            <span class="muted">{{ u.role }} • blocked: {{ u.is_blocked ? 'yes' : 'no' }}</span>
+          </div>
+          <div style="display:flex;gap:6px;">
+            <button class="btn danger" v-if="!u.is_blocked" @click="blockUser(u.id)" :data-testid="`block-user-${u.id}`">Блок</button>
+            <button class="btn ghost" v-else @click="unblockUser(u.id)" :data-testid="`unblock-user-${u.id}`">Разблок</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Fraud Events</h3>
+        <label>
+          Severity
+          <select v-model="fraudSeverity" @change="loadFraudEvents">
+            <option value="">all</option>
+            <option value="low">low</option>
+            <option value="medium">medium</option>
+            <option value="high">high</option>
+          </select>
+        </label>
+        <div v-if="fraudEvents.length === 0" class="muted">Событий пока нет</div>
+        <div v-for="ev in fraudEvents" :key="ev.id" class="session" :data-testid="`fraud-event-${ev.id}`">
+          <div class="session-main">
+            <strong>{{ ev.event_type }} ({{ ev.severity }})</strong>
+            <span class="muted">{{ ev.message || 'без сообщения' }}</span>
+          </div>
+        </div>
       </div>
     </div>
   </section>
