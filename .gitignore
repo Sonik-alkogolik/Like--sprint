@@ -16,6 +16,7 @@ client/.env
 # Python
 __pycache__/
 *.pyc
+tools/autotest-reports/
 
 # OS / editor
 .DS_Store
