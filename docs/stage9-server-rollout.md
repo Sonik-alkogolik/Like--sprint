@@ -8,18 +8,12 @@
 2. Скопировать `client/.env.production` из `client/.env.production.example`.
 3. Проверить Nginx-конфиг из `docs/nginx.like-sprint.conf`.
 4. Подготовить backup БД.
+5. Выполнить preflight локально:
+   - `pwsh scripts/deploy/server_rollout_dryrun.ps1 -Strict`
 
 ## Первая выкладка (пошагово)
 1. `cd /var/www/Like-sprint`
-2. `git pull origin main`
-3. `cd backend && composer install --no-dev --optimize-autoloader`
-4. `php artisan migrate --force`
-5. `php artisan optimize:clear`
-6. `cd ../client && npm ci && npm run build`
-7. `cd .. && rm -f public/index.html && rm -rf public/assets`
-8. `cp client/dist/index.html public/ && cp -r client/dist/assets public/`
-9. `cd backend && php artisan queue:restart`
-10. `curl -fsS http://127.0.0.1/api/health`
+2. `bash scripts/deploy/deploy_server.sh`
 
 ## Контроль после выкладки
 - Проверить веб вход для ролей `performer/advertiser/admin`.
